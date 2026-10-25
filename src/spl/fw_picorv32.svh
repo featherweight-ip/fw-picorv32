@@ -11,7 +11,7 @@ class fw_picorv32 extends fw_component implements fw_runnable;
     fw_port #(wb_proto_if #(32, 32)) wb;
     fw_port #(fw_picorv32_pins_if)   pins;      // RVFI stream, trap
 
-    bit   [31:0] regs[32];
+    bit   [31:0][31:0] regs;     // packed: the lowering writes only packed arrays in a process
     logic [31:0] pc;
     bit          trapped;
     bit   [63:0] order;
@@ -218,13 +218,23 @@ class fw_picorv32 extends fw_component implements fw_runnable;
         pc      = PROGADDR_RESET;
         trapped = 1'b0;
         order   = 0;
-        foreach (regs[i]) regs[i] = 32'h0;
+        regs    = '0;
         pins.t.set_trap(1'b0);
-        while (!trapped) begin
-            step();
-            if (ret.valid) pins.t.retire(ret);
+        // One forever loop: the lowering supports only threads that loop
+        // forever, and every path round it must wait for the clock: a trap
+        // (no bus cycle, no retire) ticks once. Once trapped, the core idles
+        // with trap high.
+        forever begin
+            if (!trapped) begin
+                step();
+                if (ret.valid) pins.t.retire(ret);
+                else begin
+                    if (trapped) pins.t.set_trap(1'b1);
+                    tick(1);
+                end
+            end else begin
+                tick(1);
+            end
         end
-        pins.t.set_trap(1'b1);
-        forever tick(1);
     endtask
 endclass

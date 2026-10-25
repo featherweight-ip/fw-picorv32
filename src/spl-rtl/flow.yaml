@@ -1,8 +1,11 @@
-# The class model on picorv32_ref's pins (fw_picorv32_top). The lowered
-# netlist (fw.hdl.lower.Lower) is added here in item 4d.
+# fw-picorv32 behind picorv32_ref's pins.
+#   spl-rtl   fw_picorv32_top around the class model (`spl`). For simulation.
+#   lowered   the same design lowered to a Verilog netlist (module
+#             fw_picorv32_top, same pins).
+#   rtl       the lowered netlist: the design sources of the `rtl` view.
 fragment:
   tasks:
-  - export: spl-rtl
+  - name: fw-picorv32-top
     uses: std.FileSet
     needs: [spl]
     with:
@@ -11,3 +14,22 @@ fragment:
       - fw_picorv32_xtor_if.sv
       - fw_picorv32_spl_rtl_pkg.sv
       - fw_picorv32_top.sv
+
+  - export: spl-rtl
+    uses: std.FileSet
+    needs: [fw-picorv32-top]
+
+  - export: lowered
+    uses: fw.hdl.lower.Lower
+    needs: [fw-picorv32-top]
+    with:
+      top: fw_picorv32_top
+      module: fw_picorv32_top
+      # each process as clocked blocks in its source's structure. seqcorr
+      # (SAT induction over the netlist) runs for over 15 minutes on this
+      # core, so it is off.
+      options: emit=structured,seqcorr=0
+
+  - export: rtl
+    uses: std.FileSet
+    needs: [lowered]
