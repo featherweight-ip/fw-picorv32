@@ -6,7 +6,8 @@ package fw_picorv32_spl_pkg;
 
     localparam logic [31:0] PROGADDR_RESET = 32'h0000_0000;
 
-    // One retired instruction: the RVFI fields (item 4c drives the rvfi_* pins).
+    // One retired instruction: the RVFI fields (rvfi_trap/halt/intr are 0:
+    // a trap halts without a retire record).
     typedef struct packed {
         bit        valid;
         bit [63:0] order;
@@ -26,6 +27,7 @@ package fw_picorv32_spl_pkg;
         bit [31:0] mem_wdata;
     } retire_t;
 
+    `include "fw_picorv32_pins_if.svh"  // RVFI stream and trap pin
     `include "fw_picorv32.svh"     // the core: fetch/execute loop over a WB port
 
 endpackage

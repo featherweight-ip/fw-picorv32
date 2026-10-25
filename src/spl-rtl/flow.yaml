@@ -8,4 +8,6 @@ fragment:
     with:
       type: systemVerilogSource
       include:
+      - fw_picorv32_xtor_if.sv
+      - fw_picorv32_spl_rtl_pkg.sv
       - fw_picorv32_top.sv

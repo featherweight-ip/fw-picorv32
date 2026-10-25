@@ -5,10 +5,11 @@
 // RV32I, one instruction at a time: fetch, decode, execute, retire. Decode
 // follows picorv32 (CATCH_ILLINSN=1): anything it does not decode, including
 // CSR instructions (ENABLE_COUNTERS=0), ECALL and EBREAK, sets `trapped` and
-// the core halts. Each retired instruction leaves its record in `ret` (the
-// RVFI fields, item 4c).
+// the core halts with the trap pin high. Each retired instruction leaves its
+// record in `ret` (the RVFI fields), which goes out on the `pins` port.
 class fw_picorv32 extends fw_component implements fw_runnable;
     fw_port #(wb_proto_if #(32, 32)) wb;
+    fw_port #(fw_picorv32_pins_if)   pins;      // RVFI stream, trap
 
     bit   [31:0] regs[32];
     logic [31:0] pc;
@@ -22,7 +23,8 @@ class fw_picorv32 extends fw_component implements fw_runnable;
     endfunction
 
     function void build();
-        wb = new("wb", this);
+        wb   = new("wb", this);
+        pins = new("pins", this);
     endfunction
 
     function bit [31:0] rd_reg(input bit [4:0] a);
@@ -217,7 +219,12 @@ class fw_picorv32 extends fw_component implements fw_runnable;
         trapped = 1'b0;
         order   = 0;
         foreach (regs[i]) regs[i] = 32'h0;
-        while (!trapped) step();
+        pins.t.set_trap(1'b0);
+        while (!trapped) begin
+            step();
+            if (ret.valid) pins.t.retire(ret);
+        end
+        pins.t.set_trap(1'b1);
         forever tick(1);
     endtask
 endclass
