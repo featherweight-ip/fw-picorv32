@@ -128,6 +128,11 @@ module hdl_top_eq;
       $display("ERROR: unmatched records ref=%0d dut=%0d", ref_q.size(), dut_q.size());
       n_err++;
     end
+    // Self-checking programs (rv32ui) write 1 to TOHOST on pass
+    if (u_dut_mem.tohost != 0 && u_dut_mem.tohost != 1) begin
+      $display("ERROR: TOHOST=%0d (test %0d failed)", u_dut_mem.tohost, u_dut_mem.tohost >> 1);
+      n_err++;
+    end
     if (n_err == 0 && n_cmp > 0) $display("PASS: %0d RVFI records match", n_cmp);
     else $fatal(1, "FAIL: %0d errors in %0d records", n_err, n_cmp);  // nonzero exit for dfm
     $finish;

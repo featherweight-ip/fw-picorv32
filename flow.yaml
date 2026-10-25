@@ -35,3 +35,4 @@ package:
   - src/spl/flow.yaml
   - src/spl-rtl/flow.yaml
   - tests/uvm/flow.yaml
+  - tests/uvm/rv32ui.yaml

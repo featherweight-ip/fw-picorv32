@@ -1,7 +1,8 @@
 // Simple Wishbone (classic) memory: one ack per strobe, byte selects.
 // Loads +hex=<file> ($readmemh, word per line) at address 0.
 module wb_mem #(
-    parameter int WORDS = 4096
+    parameter int WORDS = 4096,
+    parameter int TOHOST = 32'h3ffc
 ) (
     input             clock,
     input             reset,
@@ -15,6 +16,8 @@ module wb_mem #(
     output reg        ack
 );
   reg [31:0] mem [0:WORDS-1];
+  // riscv-tests result word (tests/sw/rv32ui/riscv_test.h): 1=pass, else fail
+  reg [31:0] tohost = 32'h0;
 
   initial begin
     string hex;
@@ -36,6 +39,10 @@ module wb_mem #(
         if (widx < WORDS) begin
           dat_r <= mem[widx];
           if (we) begin
+            if (widx == (TOHOST >> 2)) begin
+              tohost <= dat_w;
+              $display("TOHOST %0d", dat_w);
+            end
             if (sel[0]) mem[widx][7:0]   <= dat_w[7:0];
             if (sel[1]) mem[widx][15:8]  <= dat_w[15:8];
             if (sel[2]) mem[widx][23:16] <= dat_w[23:16];
