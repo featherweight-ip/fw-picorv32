@@ -1,0 +1,15 @@
+# Reference implementation: YosysHQ picorv32 (picorv32.v, copied unmodified)
+# and picorv32_ref, which fixes the plan §3 configuration (picorv32_wb,
+# ENABLE_COUNTERS = 0) and brings RVFI out. RISCV_FORMAL enables the RVFI
+# ports, so it is defined for the whole compile.
+fragment:
+  tasks:
+  - export: ref-rtl
+    uses: std.FileSet
+    with:
+      type: systemVerilogSource
+      include:
+      - picorv32.v
+      - picorv32_ref.sv
+      defines:
+      - RISCV_FORMAL

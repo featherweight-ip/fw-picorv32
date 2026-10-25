@@ -1,0 +1,34 @@
+# dv-flow (dfm) project file for fw-picorv32.
+#
+#   dfm run tests      Every simulation case.
+#   dfm run smoke      The smoke case on every view.
+#   dfm run lint-rtl   Verilator lint of the RTL.
+#
+# Views (next-design §3): `ref` (picorv32), `wb` (the class model behind the
+# Wishbone kit pins), `rtl` (its lowered netlist), `tlm`. The side-by-side
+# views (`*-eq`, as fw-i2c) put the model and picorv32 in one bench and
+# compare the RVFI and WB streams. Only `ref` exists so far.
+package:
+  name: org.fwip.picorv32
+
+  uses: project.dv.uvm
+  package-map: "${{ env.IVPM_PACKAGES }}/dv-flow-package-map.yaml"
+
+  with:
+    images:
+      type: list
+      value: [ref]
+      values: [ref, wb, rtl, tlm, wb-eq]
+      cli: true
+      desc: Views the universal tests run on
+
+  imports:
+  - project.dv.uvm
+  - hdlsim
+  - hdllint
+  - fw.proto.wb
+  - fw-hdl
+  - fw.hdl.lower
+
+  fragments:
+  - src/ref/flow.yaml

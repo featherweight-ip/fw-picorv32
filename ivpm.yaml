@@ -1,0 +1,72 @@
+$schema: https://fvutils.github.io/ivpm/ivpm.schema.json
+
+package:
+  name: fw-picorv32
+  version: "0.1.0"
+  description: >-
+    picorv32 (RV32I) written with fw-hdl, verified side by side against the
+    YosysHQ picorv32 core through RVFI and the Wishbone bus.
+  license: Apache-2.0
+  default-dep-set: dev
+
+  dep-sets:
+  # What a consumer of the IP needs: fw-hdl and the Wishbone kit.
+  - name: use
+    description: fw-hdl and the protocol kits; what a consuming project fetches.
+    deps:
+    - name: fw-hdl
+      url: https://github.com/featherweight-hdl/fw-hdl.git
+      dep-set: default-dev
+    - name: fw-proto-wb
+      url: https://github.com/featherweight-ip/fw-proto-wb.git
+      dep-set: use
+
+  # Building, verifying, lowering and synthesizing the IP. The reference
+  # (picorv32.v) is checked in under src/ref.
+  - name: dev
+    description: The use set plus the flow and tools.
+    uses: [use]
+    deps:
+    - name: fw-hdl
+      url: https://github.com/featherweight-hdl/fw-hdl.git
+      dep-set: default-dev
+
+    # Flow
+    - name: dv-flow-mgr
+      url: https://github.com/dv-flow/dv-flow-mgr.git
+      dep-set: default-dev
+    - name: dv-flow-libproject
+      url: https://github.com/dv-flow/dv-flow-libproject.git
+      dep-set: default-dev
+    - name: dv-flow-libhdlsim
+      url: https://github.com/dv-flow/dv-flow-libhdlsim.git
+      dep-set: default-dev
+    - name: dv-flow-libhdltest
+      url: https://github.com/dv-flow/dv-flow-libhdltest.git
+      dep-set: default-dev
+    - name: dv-flow-libhdllint
+      url: https://github.com/dv-flow/dv-flow-libhdllint.git
+      dep-set: default-dev
+
+    # Tools
+    - name: verilator
+      src: gh-rls
+      url: https://github.com/edapack/verilator-bin
+      cache: true
+    - name: yosys
+      src: gh-rls
+      url: https://github.com/edapack/yosys-bin
+      cache: true
+      dep-set: default
+    - name: nextpnr
+      src: gh-rls
+      url: https://github.com/edapack/nextpnr-bin
+      cache: true
+    # Test programs (riscv-tests rv32ui, picorv32 firmware).
+    - name: gcc-riscv
+      src: gh-rls
+      url: https://github.com/edapack/gcc-riscv-bin
+      cache: true
+    # NOTE: fw-hdl's dfm plugin (packages/fw-hdl/python) is not at the repo
+    # root, so ivpm does not install it. Install it once by hand:
+    #   uv pip install --python packages/python/bin/python -e packages/fw-hdl/python
