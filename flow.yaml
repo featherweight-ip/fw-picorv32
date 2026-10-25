@@ -34,3 +34,4 @@ package:
   - src/ref/flow.yaml
   - src/spl/flow.yaml
   - src/spl-rtl/flow.yaml
+  - tests/uvm/flow.yaml

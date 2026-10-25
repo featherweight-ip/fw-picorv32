@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://dv-flow.github.io/flow.dv.schema.json
+#
+# Side-by-side (`*-eq`) benches, as fw-i2c: picorv32 (ref-rtl) and the class
+# model behind pins (spl-rtl) in one top, each with its own WB memory loaded
+# from the same hex, RVFI records compared in order (tb/hdl_top_eq.sv).
+#   dfm run wb-eq-smoke   tests/sw/smoke.hex on the `wb` view vs picorv32.
+fragment:
+  tasks:
+  - { name: view-src-wb-eq, passthrough: all, consumes: none, needs: [spl-rtl, ref-rtl] }
+
+  - name: eq-tb
+    uses: std.FileSet
+    with:
+      type: systemVerilogSource
+      include:
+      - tb/wb_mem.sv
+      - tb/hdl_top_eq.sv
+
+  - name: wb-eq-img
+    uses: hdlsim.vlt.SimImage
+    needs: [view-src-wb-eq, eq-tb]
+    with:
+      top: [hdl_top_eq]
+
+  - root: wb-eq-smoke
+    uses: hdlsim.vlt.SimRun
+    needs: [wb-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]

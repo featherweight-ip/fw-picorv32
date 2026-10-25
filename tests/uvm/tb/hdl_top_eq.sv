@@ -129,7 +129,7 @@ module hdl_top_eq;
       n_err++;
     end
     if (n_err == 0 && n_cmp > 0) $display("PASS: %0d RVFI records match", n_cmp);
-    else $display("FAIL: %0d errors in %0d records", n_err, n_cmp);
+    else $fatal(1, "FAIL: %0d errors in %0d records", n_err, n_cmp);  // nonzero exit for dfm
     $finish;
   endtask
 
