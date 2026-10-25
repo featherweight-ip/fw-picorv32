@@ -199,6 +199,19 @@ def trap_illegal():
     return [addi(1, 0, 5), 0xffffffff, addi(4, 0, 1), ebreak()]
 
 
+PERF_ITERS = 250000
+
+
+def perf():
+    """Speed: PERF_ITERS rounds of an 8-instruction loop (ALU, load, store,
+    branch), about 2M instructions, then ebreak."""
+    p = [li(1, PERF_ITERS), addi(2, 0, 0x300), addi(3, 0, 1), sw(0, 2, 0)]
+    loop = [lw(4, 2, 0), add(4, 4, 3), sw(4, 2, 0), xor(5, 4, 1),
+            slli(6, 5, 3), srai(7, 6, 1), addi(1, 1, -1)]
+    loop.append(bne(1, 0, -4 * len(loop)))
+    return _flat(p + loop + [ebreak()])
+
+
 PROGS = {
     "smoke": smoke,
     "alu": alu,
@@ -206,6 +219,7 @@ PROGS = {
     "branch": branch,
     "trap-misaligned": trap_misaligned,
     "trap-illegal": trap_illegal,
+    "perf": perf,
 }
 
 

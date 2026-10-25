@@ -8,10 +8,18 @@
 #                         (programs from tests/sw/asm.py); wb-eq-all runs all six.
 #   dfm run rtl-eq-<prog> the same programs on the `rtl` view (lowered netlist,
 #                         module fw_picorv32_top, same pins); rtl-eq-all runs all six.
+#   dfm run tlm-eq-<prog> the same programs on the `tlm` view (the class model
+#                         with no pins: memory and RVFI are classes, the clock a
+#                         delay; tb/fw_picorv32_tlm_pkg.sv) vs picorv32; tlm-eq-all.
+#   dfm run tlm-<prog>    the tlm model alone (tb/hdl_top_tlm.sv): PASS when it
+#                         halts on a trap with TOHOST 0 or 1; tlm-all.
+#   dfm run tlm-perf      tests/sw/perf.hex (~2M instructions) on tlm; tlm-eq-perf vs picorv32.
 fragment:
   tasks:
   - { name: view-src-wb-eq, passthrough: all, consumes: none, needs: [spl-rtl, ref-rtl] }
   - { name: view-src-rtl-eq, passthrough: all, consumes: none, needs: [rtl, ref-rtl] }
+  - { name: view-src-tlm, passthrough: all, consumes: none, needs: [spl] }
+  - { name: view-src-tlm-eq, passthrough: all, consumes: none, needs: [spl, ref-rtl] }
 
   - name: eq-tb
     uses: std.FileSet
@@ -20,97 +28,355 @@ fragment:
       include:
       - tb/wb_mem.sv
       - tb/hdl_top_eq.sv
+      incdirs:
+      - tb
 
   - name: wb-eq-img
     uses: hdlsim.vlt.SimImage
-    needs: [view-src-wb-eq, eq-tb]
+    needs: [view-src-wb-eq, eq-tb, flags-img]
     with:
       top: [hdl_top_eq]
 
-  - root: wb-eq-smoke
+  - name: wb-eq-smoke-run
     uses: hdlsim.vlt.SimRun
-    needs: [wb-eq-img]
+    needs: [wb-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]
+  - name: wb-eq-smoke
+    uses: hdlsim.SimCheck
+    needs: [wb-eq-smoke-run]
+    with: {name: wb-eq-smoke}
 
-  - root: wb-eq-alu
+  - name: wb-eq-alu-run
     uses: hdlsim.vlt.SimRun
-    needs: [wb-eq-img]
+    needs: [wb-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/alu.hex"]
+  - name: wb-eq-alu
+    uses: hdlsim.SimCheck
+    needs: [wb-eq-alu-run]
+    with: {name: wb-eq-alu}
 
-  - root: wb-eq-mem
+  - name: wb-eq-mem-run
     uses: hdlsim.vlt.SimRun
-    needs: [wb-eq-img]
+    needs: [wb-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/mem.hex"]
+  - name: wb-eq-mem
+    uses: hdlsim.SimCheck
+    needs: [wb-eq-mem-run]
+    with: {name: wb-eq-mem}
 
-  - root: wb-eq-branch
+  - name: wb-eq-branch-run
     uses: hdlsim.vlt.SimRun
-    needs: [wb-eq-img]
+    needs: [wb-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/branch.hex"]
+  - name: wb-eq-branch
+    uses: hdlsim.SimCheck
+    needs: [wb-eq-branch-run]
+    with: {name: wb-eq-branch}
 
-  - root: wb-eq-trap-misaligned
+  - name: wb-eq-trap-misaligned-run
     uses: hdlsim.vlt.SimRun
-    needs: [wb-eq-img]
+    needs: [wb-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/trap-misaligned.hex"]
+  - name: wb-eq-trap-misaligned
+    uses: hdlsim.SimCheck
+    needs: [wb-eq-trap-misaligned-run]
+    with: {name: wb-eq-trap-misaligned}
 
-  - root: wb-eq-trap-illegal
+  - name: wb-eq-trap-illegal-run
     uses: hdlsim.vlt.SimRun
-    needs: [wb-eq-img]
+    needs: [wb-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/trap-illegal.hex"]
+  - name: wb-eq-trap-illegal
+    uses: hdlsim.SimCheck
+    needs: [wb-eq-trap-illegal-run]
+    with: {name: wb-eq-trap-illegal}
 
-  - root: wb-eq-all
+  - name: wb-eq-all
     passthrough: all
     consumes: none
     needs: [wb-eq-smoke, wb-eq-alu, wb-eq-mem, wb-eq-branch, wb-eq-trap-misaligned, wb-eq-trap-illegal]
 
   - name: rtl-eq-img
     uses: hdlsim.vlt.SimImage
-    needs: [view-src-rtl-eq, eq-tb]
+    needs: [view-src-rtl-eq, eq-tb, flags-img]
     with:
       top: [hdl_top_eq]
 
-  - root: rtl-eq-smoke
+  - name: rtl-eq-smoke-run
     uses: hdlsim.vlt.SimRun
-    needs: [rtl-eq-img]
+    needs: [rtl-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]
+  - name: rtl-eq-smoke
+    uses: hdlsim.SimCheck
+    needs: [rtl-eq-smoke-run]
+    with: {name: rtl-eq-smoke}
 
-  - root: rtl-eq-alu
+  - name: rtl-eq-alu-run
     uses: hdlsim.vlt.SimRun
-    needs: [rtl-eq-img]
+    needs: [rtl-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/alu.hex"]
+  - name: rtl-eq-alu
+    uses: hdlsim.SimCheck
+    needs: [rtl-eq-alu-run]
+    with: {name: rtl-eq-alu}
 
-  - root: rtl-eq-mem
+  - name: rtl-eq-mem-run
     uses: hdlsim.vlt.SimRun
-    needs: [rtl-eq-img]
+    needs: [rtl-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/mem.hex"]
+  - name: rtl-eq-mem
+    uses: hdlsim.SimCheck
+    needs: [rtl-eq-mem-run]
+    with: {name: rtl-eq-mem}
 
-  - root: rtl-eq-branch
+  - name: rtl-eq-branch-run
     uses: hdlsim.vlt.SimRun
-    needs: [rtl-eq-img]
+    needs: [rtl-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/branch.hex"]
+  - name: rtl-eq-branch
+    uses: hdlsim.SimCheck
+    needs: [rtl-eq-branch-run]
+    with: {name: rtl-eq-branch}
 
-  - root: rtl-eq-trap-misaligned
+  - name: rtl-eq-trap-misaligned-run
     uses: hdlsim.vlt.SimRun
-    needs: [rtl-eq-img]
+    needs: [rtl-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/trap-misaligned.hex"]
+  - name: rtl-eq-trap-misaligned
+    uses: hdlsim.SimCheck
+    needs: [rtl-eq-trap-misaligned-run]
+    with: {name: rtl-eq-trap-misaligned}
 
-  - root: rtl-eq-trap-illegal
+  - name: rtl-eq-trap-illegal-run
     uses: hdlsim.vlt.SimRun
-    needs: [rtl-eq-img]
+    needs: [rtl-eq-img, "flags-run-${{ build }}"]
     with:
+      mode: test
       plusargs: ["hex=${{ rootdir }}/tests/sw/trap-illegal.hex"]
+  - name: rtl-eq-trap-illegal
+    uses: hdlsim.SimCheck
+    needs: [rtl-eq-trap-illegal-run]
+    with: {name: rtl-eq-trap-illegal}
 
-  - root: rtl-eq-all
+  - name: rtl-eq-all
     passthrough: all
     consumes: none
     needs: [rtl-eq-smoke, rtl-eq-alu, rtl-eq-mem, rtl-eq-branch, rtl-eq-trap-misaligned, rtl-eq-trap-illegal]
+
+  - name: tlm-tb
+    uses: std.FileSet
+    with:
+      type: systemVerilogSource
+      include:
+      - tb/fw_picorv32_tlm_pkg.sv
+      - tb/hdl_top_tlm.sv
+
+  - name: tlm-eq-tb
+    uses: std.FileSet
+    with:
+      type: systemVerilogSource
+      include:
+      - tb/wb_mem.sv
+      - tb/fw_picorv32_tlm_pkg.sv
+      - tb/hdl_top_tlm_eq.sv
+      incdirs:
+      - tb
+
+  - name: tlm-img
+    uses: hdlsim.vlt.SimImage
+    needs: [view-src-tlm, tlm-tb, flags-img]
+    with:
+      top: [hdl_top_tlm]
+
+  - name: tlm-eq-img
+    uses: hdlsim.vlt.SimImage
+    needs: [view-src-tlm-eq, tlm-eq-tb, flags-img]
+    with:
+      top: [hdl_top_tlm_eq]
+
+  - name: tlm-smoke-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]
+  - name: tlm-smoke
+    uses: hdlsim.SimCheck
+    needs: [tlm-smoke-run]
+    with: {name: tlm-smoke}
+
+  - name: tlm-alu-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/alu.hex"]
+  - name: tlm-alu
+    uses: hdlsim.SimCheck
+    needs: [tlm-alu-run]
+    with: {name: tlm-alu}
+
+  - name: tlm-mem-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/mem.hex"]
+  - name: tlm-mem
+    uses: hdlsim.SimCheck
+    needs: [tlm-mem-run]
+    with: {name: tlm-mem}
+
+  - name: tlm-branch-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/branch.hex"]
+  - name: tlm-branch
+    uses: hdlsim.SimCheck
+    needs: [tlm-branch-run]
+    with: {name: tlm-branch}
+
+  - name: tlm-trap-misaligned-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-misaligned.hex"]
+  - name: tlm-trap-misaligned
+    uses: hdlsim.SimCheck
+    needs: [tlm-trap-misaligned-run]
+    with: {name: tlm-trap-misaligned}
+
+  - name: tlm-trap-illegal-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-illegal.hex"]
+  - name: tlm-trap-illegal
+    uses: hdlsim.SimCheck
+    needs: [tlm-trap-illegal-run]
+    with: {name: tlm-trap-illegal}
+
+  - name: tlm-all
+    passthrough: all
+    consumes: none
+    needs: [tlm-smoke, tlm-alu, tlm-mem, tlm-branch, tlm-trap-misaligned, tlm-trap-illegal]
+
+  - name: tlm-eq-smoke-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]
+  - name: tlm-eq-smoke
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-smoke-run]
+    with: {name: tlm-eq-smoke}
+
+  - name: tlm-eq-alu-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/alu.hex"]
+  - name: tlm-eq-alu
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-alu-run]
+    with: {name: tlm-eq-alu}
+
+  - name: tlm-eq-mem-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/mem.hex"]
+  - name: tlm-eq-mem
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-mem-run]
+    with: {name: tlm-eq-mem}
+
+  - name: tlm-eq-branch-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/branch.hex"]
+  - name: tlm-eq-branch
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-branch-run]
+    with: {name: tlm-eq-branch}
+
+  - name: tlm-eq-trap-misaligned-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-misaligned.hex"]
+  - name: tlm-eq-trap-misaligned
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-trap-misaligned-run]
+    with: {name: tlm-eq-trap-misaligned}
+
+  - name: tlm-eq-trap-illegal-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-illegal.hex"]
+  - name: tlm-eq-trap-illegal
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-trap-illegal-run]
+    with: {name: tlm-eq-trap-illegal}
+
+  - name: tlm-eq-all
+    passthrough: all
+    consumes: none
+    needs: [tlm-eq-smoke, tlm-eq-alu, tlm-eq-mem, tlm-eq-branch, tlm-eq-trap-misaligned, tlm-eq-trap-illegal]
+
+  # Speed (docs/tlm-bench.md): tests/sw/perf.hex, about 2M instructions.
+  - name: tlm-perf-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/perf.hex", "max_insns=10000000"]
+  - name: tlm-perf
+    uses: hdlsim.SimCheck
+    needs: [tlm-perf-run]
+    with: {name: tlm-perf}
+
+  - name: tlm-eq-perf-run
+    uses: hdlsim.vlt.SimRun
+    needs: [tlm-eq-img, "flags-run-${{ build }}"]
+    with:
+      mode: test
+      plusargs: ["hex=${{ rootdir }}/tests/sw/perf.hex", "max_insns=10000000", "max_cycles=100000000"]
+  - name: tlm-eq-perf
+    uses: hdlsim.SimCheck
+    needs: [tlm-eq-perf-run]
+    with: {name: tlm-eq-perf}

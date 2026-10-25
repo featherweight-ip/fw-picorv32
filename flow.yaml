@@ -1,13 +1,14 @@
 # dv-flow (dfm) project file for fw-picorv32.
 #
-#   dfm run tests      Every simulation case.
+#   dfm run tests      Every simulation case (168: 6 programs + 36 rv32ui, x4 benches).
 #   dfm run smoke      The smoke case on every view.
 #   dfm run lint-rtl   Verilator lint of the RTL.
 #
 # Views (next-design §3): `ref` (picorv32), `wb` (the class model behind the
 # Wishbone kit pins), `rtl` (its lowered netlist), `tlm`. The side-by-side
 # views (`*-eq`, as fw-i2c) put the model and picorv32 in one bench and
-# compare the RVFI and WB streams. Only `ref` exists so far.
+# compare the RVFI streams (tests/uvm/flow.yaml). `tlm` is the class model
+# with no pins (docs/tlm-bench.md).
 package:
   name: org.fwip.picorv32
 
@@ -36,3 +37,21 @@ package:
   - src/spl-rtl/flow.yaml
   - tests/uvm/flow.yaml
   - tests/uvm/rv32ui.yaml
+
+  tasks:
+  # Every simulation case (tests/uvm/flow.yaml, tests/uvm/rv32ui.yaml) is a
+  # package-local task; the archetype's `tests` and `smoke` collect them.
+  # The perf cases (tlm-perf, tlm-eq-perf) are left out: run them by name.
+  - override: tests
+    needs:
+    - wb-eq-all
+    - rtl-eq-all
+    - tlm-eq-all
+    - tlm-all
+    - wb-eq-rv32ui
+    - rtl-eq-rv32ui
+    - tlm-eq-rv32ui
+    - tlm-rv32ui
+
+  - override: smoke
+    needs: [wb-eq-smoke, rtl-eq-smoke, tlm-eq-smoke, tlm-smoke]
