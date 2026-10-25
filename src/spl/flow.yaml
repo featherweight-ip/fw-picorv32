@@ -1,0 +1,18 @@
+# Class model of the core: one package, fw_picorv32_spl_pkg.
+fragment:
+  tasks:
+  - name: fw-picorv32-spl-pkg
+    uses: std.FileSet
+    needs:
+    - fw-hdl.hdl.sv-src
+    - fw.proto.wb.files
+    with:
+      type: systemVerilogSource
+      include:
+      - fw_picorv32_spl_pkg.sv
+      incdirs:
+      - .
+
+  - export: spl
+    uses: std.FileSet
+    needs: [fw-picorv32-spl-pkg]

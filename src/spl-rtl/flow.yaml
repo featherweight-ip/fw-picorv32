@@ -1,0 +1,11 @@
+# The class model on picorv32_ref's pins (fw_picorv32_top). The lowered
+# netlist (fw.hdl.lower.Lower) is added here in item 4d.
+fragment:
+  tasks:
+  - export: spl-rtl
+    uses: std.FileSet
+    needs: [spl]
+    with:
+      type: systemVerilogSource
+      include:
+      - fw_picorv32_top.sv
