@@ -6,10 +6,11 @@ package fw_picorv32_spl_pkg;
 
     localparam logic [31:0] PROGADDR_RESET = 32'h0000_0000;
 
-    // One retired instruction: the RVFI fields (rvfi_trap/halt/intr are 0:
-    // a trap halts without a retire record).
+    // One retired instruction: the RVFI fields. As in picorv32, a trap gives
+    // one last record with trap set (rvfi_trap and rvfi_halt; rvfi_intr is 0).
     typedef struct packed {
         bit        valid;
+        bit        trap;
         bit [63:0] order;
         bit [31:0] insn;
         bit [4:0]  rs1_addr;

@@ -149,6 +149,7 @@ class fw_picorv32 extends fw_component implements fw_runnable;
         ret = '0;
         if (pc[1:0] != 2'b00) begin trapped = 1'b1; return; end
         bus(pc, 32'h0, 4'hF, 1'b0, insn, err);
+        ret.insn = insn;
         if (!legal(insn)) begin trapped = 1'b1; return; end
 
         rd  = insn[11:7];
@@ -221,17 +222,22 @@ class fw_picorv32 extends fw_component implements fw_runnable;
         regs    = '0;
         pins.t.set_trap(1'b0);
         // One forever loop: the lowering supports only threads that loop
-        // forever, and every path round it must wait for the clock: a trap
-        // (no bus cycle, no retire) ticks once. Once trapped, the core idles
-        // with trap high.
+        // forever, and every path round it must wait for the clock (retire
+        // takes one clock). A trap, as in picorv32, gives one last record
+        // with trap set (insn and pc of the trapping instruction); then the
+        // core idles with trap high.
         forever begin
             if (!trapped) begin
                 step();
-                if (ret.valid) pins.t.retire(ret);
-                else begin
-                    if (trapped) pins.t.set_trap(1'b1);
-                    tick(1);
+                if (trapped) begin
+                    ret.valid    = 1'b1;
+                    ret.trap     = 1'b1;
+                    ret.pc_rdata = pc;
+                    ret.order    = order;
+                    order++;
+                    pins.t.set_trap(1'b1);
                 end
+                pins.t.retire(ret);
             end else begin
                 tick(1);
             end

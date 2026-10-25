@@ -1,6 +1,6 @@
 // The model's side of the non-bus pins: the RVFI retire stream and the trap
 // level. The class side calls these through fw_picorv32_pins_export
-// (fw_picorv32_spl_rtl_pkg). rvfi_trap, rvfi_halt and rvfi_intr stay 0.
+// (fw_picorv32_spl_rtl_pkg). rvfi_trap and rvfi_halt follow the record's trap; rvfi_intr stays 0.
 interface fw_picorv32_xtor_if (
         input  wire        clock,
         input  wire        reset,
@@ -67,6 +67,8 @@ interface fw_picorv32_xtor_if (
         rvfi_mem_wmask <= r.mem_wmask;
         rvfi_mem_rdata <= r.mem_rdata;
         rvfi_mem_wdata <= r.mem_wdata;
+        rvfi_trap      <= r.trap;
+        rvfi_halt      <= r.trap;
         rvfi_valid     <= 1'b1;
         @(posedge clock);
         rvfi_valid     <= 1'b0;
