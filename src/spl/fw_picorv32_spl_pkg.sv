@@ -6,6 +6,26 @@ package fw_picorv32_spl_pkg;
 
     localparam logic [31:0] PROGADDR_RESET = 32'h0000_0000;
 
+    // One retired instruction: the RVFI fields (item 4c drives the rvfi_* pins).
+    typedef struct packed {
+        bit        valid;
+        bit [63:0] order;
+        bit [31:0] insn;
+        bit [4:0]  rs1_addr;
+        bit [4:0]  rs2_addr;
+        bit [31:0] rs1_rdata;
+        bit [31:0] rs2_rdata;
+        bit [4:0]  rd_addr;
+        bit [31:0] rd_wdata;
+        bit [31:0] pc_rdata;
+        bit [31:0] pc_wdata;
+        bit [31:0] mem_addr;
+        bit [3:0]  mem_rmask;
+        bit [3:0]  mem_wmask;
+        bit [31:0] mem_rdata;
+        bit [31:0] mem_wdata;
+    } retire_t;
+
     `include "fw_picorv32.svh"     // the core: fetch/execute loop over a WB port
 
 endpackage
