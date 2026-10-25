@@ -78,33 +78,26 @@ class fw_picorv32 extends fw_component implements fw_runnable;
     function bit legal(input bit [31:0] i);
         bit [2:0] f3 = i[14:12];
         bit [6:0] f7 = i[31:25];
-        case (i[6:0])
-            7'b0110111, 7'b0010111, 7'b1101111: return 1'b1;          // LUI AUIPC JAL
-            7'b1100111: return f3 == 3'b000;                          // JALR
-            7'b1100011: return f3 != 3'b010 && f3 != 3'b011;          // BRANCH
-            7'b0000011: return f3 != 3'b011 && f3 < 3'b110;           // LOAD
-            7'b0100011: return f3 < 3'b011;                           // STORE
-            7'b0010011: begin                                         // OP-IMM
-                if (f3 == 3'b001) return f7 == 7'h00;
-                if (f3 == 3'b101) return f7 == 7'h00 || f7 == 7'h20;
-                return 1'b1;
-            end
-            7'b0110011: begin                                         // OP
-                if (f3 == 3'b000 || f3 == 3'b101) return f7 == 7'h00 || f7 == 7'h20;
-                return f7 == 7'h00;
-            end
-            7'b0001111: return f3 == 3'b000;                          // FENCE (nop)
-            default: return 1'b0;    // SYSTEM (ECALL/EBREAK/CSR) traps too
-        endcase
+        bit [6:0] op = i[6:0];
+        // As one expression: a case of returns here lowers wrong (state/notes/7.md).
+        return op == 7'b0110111 || op == 7'b0010111 || op == 7'b1101111    // LUI AUIPC JAL
+            || (op == 7'b1100111 && f3 == 3'b000)                          // JALR
+            || (op == 7'b1100011 && f3 != 3'b010 && f3 != 3'b011)          // BRANCH
+            || (op == 7'b0000011 && f3 != 3'b011 && f3 < 3'b110)           // LOAD
+            || (op == 7'b0100011 && f3 < 3'b011)                           // STORE
+            || (op == 7'b0010011 && (f3 == 3'b001 ? f7 == 7'h00            // OP-IMM
+                                   : f3 == 3'b101 ? (f7 == 7'h00 || f7 == 7'h20) : 1'b1))
+            || (op == 7'b0110011 && ((f3 == 3'b000 || f3 == 3'b101)        // OP
+                                   ? (f7 == 7'h00 || f7 == 7'h20) : f7 == 7'h00))
+            || (op == 7'b0001111 && f3 == 3'b000);                         // FENCE (nop)
+        // anything else (SYSTEM: ECALL/EBREAK/CSR) traps
     endfunction
 
     // Byte lanes for a size (f3[1:0]: 0 byte, 1 half, 2 word) at addr[1:0].
     function bit [3:0] lane_mask(input bit [1:0] sz, input bit [1:0] off);
-        case (sz)
-            2'b00:   return 4'b0001 << off;
-            2'b01:   return off[1] ? 4'b1100 : 4'b0011;
-            default: return 4'b1111;
-        endcase
+        return sz == 2'b00 ? 4'b0001 << off
+             : sz == 2'b01 ? (off[1] ? 4'b1100 : 4'b0011)
+             : 4'b1111;
     endfunction
 
     function bit misaligned(input bit [1:0] sz, input bit [1:0] off);

@@ -6,9 +6,12 @@
 #   dfm run wb-eq-smoke   tests/sw/smoke.hex on the `wb` view vs picorv32.
 #   dfm run wb-eq-<prog>  same for alu, mem, branch, trap-misaligned, trap-illegal
 #                         (programs from tests/sw/asm.py); wb-eq-all runs all six.
+#   dfm run rtl-eq-<prog> the same programs on the `rtl` view (lowered netlist,
+#                         module fw_picorv32_top, same pins); rtl-eq-all runs all six.
 fragment:
   tasks:
   - { name: view-src-wb-eq, passthrough: all, consumes: none, needs: [spl-rtl, ref-rtl] }
+  - { name: view-src-rtl-eq, passthrough: all, consumes: none, needs: [rtl, ref-rtl] }
 
   - name: eq-tb
     uses: std.FileSet
@@ -64,3 +67,50 @@ fragment:
     passthrough: all
     consumes: none
     needs: [wb-eq-smoke, wb-eq-alu, wb-eq-mem, wb-eq-branch, wb-eq-trap-misaligned, wb-eq-trap-illegal]
+
+  - name: rtl-eq-img
+    uses: hdlsim.vlt.SimImage
+    needs: [view-src-rtl-eq, eq-tb]
+    with:
+      top: [hdl_top_eq]
+
+  - root: rtl-eq-smoke
+    uses: hdlsim.vlt.SimRun
+    needs: [rtl-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]
+
+  - root: rtl-eq-alu
+    uses: hdlsim.vlt.SimRun
+    needs: [rtl-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/alu.hex"]
+
+  - root: rtl-eq-mem
+    uses: hdlsim.vlt.SimRun
+    needs: [rtl-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/mem.hex"]
+
+  - root: rtl-eq-branch
+    uses: hdlsim.vlt.SimRun
+    needs: [rtl-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/branch.hex"]
+
+  - root: rtl-eq-trap-misaligned
+    uses: hdlsim.vlt.SimRun
+    needs: [rtl-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-misaligned.hex"]
+
+  - root: rtl-eq-trap-illegal
+    uses: hdlsim.vlt.SimRun
+    needs: [rtl-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-illegal.hex"]
+
+  - root: rtl-eq-all
+    passthrough: all
+    consumes: none
+    needs: [rtl-eq-smoke, rtl-eq-alu, rtl-eq-mem, rtl-eq-branch, rtl-eq-trap-misaligned, rtl-eq-trap-illegal]
