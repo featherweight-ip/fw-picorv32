@@ -4,6 +4,8 @@
 # model behind pins (spl-rtl) in one top, each with its own WB memory loaded
 # from the same hex, RVFI records compared in order (tb/hdl_top_eq.sv).
 #   dfm run wb-eq-smoke   tests/sw/smoke.hex on the `wb` view vs picorv32.
+#   dfm run wb-eq-<prog>  same for alu, mem, branch, trap-misaligned, trap-illegal
+#                         (programs from tests/sw/asm.py); wb-eq-all runs all six.
 fragment:
   tasks:
   - { name: view-src-wb-eq, passthrough: all, consumes: none, needs: [spl-rtl, ref-rtl] }
@@ -27,3 +29,38 @@ fragment:
     needs: [wb-eq-img]
     with:
       plusargs: ["hex=${{ rootdir }}/tests/sw/smoke.hex"]
+
+  - root: wb-eq-alu
+    uses: hdlsim.vlt.SimRun
+    needs: [wb-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/alu.hex"]
+
+  - root: wb-eq-mem
+    uses: hdlsim.vlt.SimRun
+    needs: [wb-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/mem.hex"]
+
+  - root: wb-eq-branch
+    uses: hdlsim.vlt.SimRun
+    needs: [wb-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/branch.hex"]
+
+  - root: wb-eq-trap-misaligned
+    uses: hdlsim.vlt.SimRun
+    needs: [wb-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-misaligned.hex"]
+
+  - root: wb-eq-trap-illegal
+    uses: hdlsim.vlt.SimRun
+    needs: [wb-eq-img]
+    with:
+      plusargs: ["hex=${{ rootdir }}/tests/sw/trap-illegal.hex"]
+
+  - root: wb-eq-all
+    passthrough: all
+    consumes: none
+    needs: [wb-eq-smoke, wb-eq-alu, wb-eq-mem, wb-eq-branch, wb-eq-trap-misaligned, wb-eq-trap-illegal]
