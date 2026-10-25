@@ -180,11 +180,11 @@ class fw_picorv32 extends fw_component implements fw_runnable;
             7'b0000011: begin                                           // LOAD
                 ea = a + imm_i(insn);
                 if (misaligned(insn[13:12], ea[1:0])) begin trapped = 1'b1; return; end
-                m = lane_mask(insn[13:12], ea[1:0]);
-                bus({ea[31:2], 2'b00}, 32'h0, m, 1'b0, rdat, err);
+                // Like the ref: whole-word read (WB sel=0, RVFI rmask=4'hf)
+                bus({ea[31:2], 2'b00}, 32'h0, 4'h0, 1'b0, rdat, err);
                 wd = load_ext(insn[14:12], ea[1:0], rdat);
                 ret.mem_addr  = {ea[31:2], 2'b00};
-                ret.mem_rmask = m;
+                ret.mem_rmask = 4'hf;
                 ret.mem_rdata = rdat;
             end
             7'b0100011: begin                                           // STORE
